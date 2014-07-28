@@ -1,0 +1,4 @@
+* # Blacklist everything
+!*/ # Whitelist all directories
+!*.c
+!*.h

@@ -1,0 +1,188 @@
+Disassembly Listing for tt_blink
+Generated From:
+C:/Users/Kim Chesed Paller/MPLABXProjects/iit-avionics/tt_blink.X/dist/default/debug/tt_blink.X.debug.elf
+May 20, 2014 8:26:33 PM
+
+---  C:/Users/Kim Chesed Paller/MPLABXProjects/iit-avionics/tt_blink.X/tt_blink.c  ----------------------
+1:                 /* 
+2:                  * File:   tt_blink.c
+3:                  * Author: Kim Chesed Paller
+4:                  *
+5:                  * Created on May 19, 2014, 10:47 AM
+6:                  */
+7:                 
+8:                 #include <stdio.h>
+9:                 #include <stdlib.h>
+10:                #include "config.h"
+11:                #include <libpic30.h>
+12:                
+13:                #define FCY 40000000ULL //Fcy = (Fosc/2) Fosc = 80MHz
+14:                /*
+15:                 * 
+16:                 */
+17:                
+18:                /*Initialization Routines*/
+19:                void SetupClock(void){
+000298  FA0000     LNK #0x0
+20:                    // Configure PLL prescaler, PLL postscaler, PLL divisor
+21:                    PLLFBD=38; // M = 40
+00029A  200264     MOV #0x26, W4
+00029C  883A34     MOV W4, PLLFBD
+22:                    CLKDIVbits.PLLPOST = 0; // N2 = 2
+00029E  803A24     MOV CLKDIV, W4
+0002A0  A16004     BCLR W4, #6
+0002A2  A17004     BCLR W4, #7
+0002A4  883A24     MOV W4, CLKDIV
+23:                    CLKDIVbits.PLLPRE = 0; // N1 = 2
+0002A6  803A25     MOV CLKDIV, W5
+0002A8  2FFE04     MOV #0xFFE0, W4
+0002AA  628204     AND W5, W4, W4
+0002AC  883A24     MOV W4, CLKDIV
+24:                
+25:                    // Initiate Clock Switch to Internal FRC with PLL (NOSC = 0b011)
+26:                    __builtin_write_OSCCONH(0x03);
+0002AE  200036     MOV #0x3, W6
+0002B0  200784     MOV #0x78, W4
+0002B2  2009A5     MOV #0x9A, W5
+0002B4  207437     MOV #0x743, W7
+0002B6  784B84     MOV.B W4, [W7]
+0002B8  784B85     MOV.B W5, [W7]
+0002BA  784B86     MOV.B W6, [W7]
+27:                    __builtin_write_OSCCONL(0x01);
+0002BC  200016     MOV #0x1, W6
+0002BE  200464     MOV #0x46, W4
+0002C0  200575     MOV #0x57, W5
+0002C2  207427     MOV #0x742, W7
+0002C4  784B84     MOV.B W4, [W7]
+0002C6  784B85     MOV.B W5, [W7]
+0002C8  784B86     MOV.B W6, [W7]
+28:                
+29:                    // Wait for Clock switch to occur
+30:                    while (OSCCONbits.COSC != 0b011){};
+0002CA  000000     NOP
+0002CC  803A15     MOV OSCCON, W5
+0002CE  270004     MOV #0x7000, W4
+0002D0  628284     AND W5, W4, W5
+0002D2  230004     MOV #0x3000, W4
+0002D4  528F84     SUB W5, W4, [W15]
+0002D6  3AFFFA     BRA NZ, 0x2CC
+31:                    // Wait for PLL to lock
+32:                    while(OSCCONbits.LOCK != 1) {};
+0002D8  000000     NOP
+0002DA  803A15     MOV OSCCON, W5
+0002DC  200204     MOV #0x20, W4
+0002DE  628204     AND W5, W4, W4
+0002E0  520FE0     SUB W4, #0x0, [W15]
+0002E2  32FFFB     BRA Z, 0x2DA
+33:                }
+0002E4  FA8000     ULNK
+0002E6  060000     RETURN
+34:                void InitLED(void){
+0002E8  FA0000     LNK #0x0
+35:                    TRISAbits.TRISA0 = 0;
+0002EA  A902C0     BCLR TRISA, #0
+36:                    LATAbits.LATA0 = 0;
+0002EC  A902C4     BCLR LATA, #0
+37:                }
+0002EE  FA8000     ULNK
+0002F0  060000     RETURN
+38:                void InitT89(void){
+0002F2  FA0000     LNK #0x0
+39:                
+40:                    T9CONbits.TON = 0; // Stop any 16-bit Timer9 operation
+0002F4  A9E13D     BCLR 0x13D, #7
+41:                    T8CONbits.TON = 0; // Stop any 16/32-bit Timer8 operation
+0002F6  A9E13B     BCLR 0x13B, #7
+42:                
+43:                    //Timer Mode Configuration @32-bit
+44:                    T8CONbits.T32 = 1; // Enable 32-bit Timer mode
+0002F8  A8613A     BSET T8CON, #3
+45:                    T8CONbits.TCS = 0; // Select internal instruction cycle clock
+0002FA  A9213A     BCLR T8CON, #1
+46:                    T8CONbits.TGATE = 0; // Disable Gated Timer mode
+0002FC  A9C13A     BCLR T8CON, #6
+47:                    //T8CONbits.TSYNC = 0;
+48:                
+49:                    //Timer 1 Prescaler configuration 1:256
+50:                    T8CONbits.TCKPS = 0b11;
+0002FE  8009D4     MOV T8CON, W4
+000300  A04004     BSET W4, #4
+000302  A05004     BSET W4, #5
+000304  8809D4     MOV W4, T8CON
+51:                
+52:                    TMR9 = 0x00; // Clear 32-bit Timer (msw)
+000306  EB0200     CLR W4
+000308  8809A4     MOV W4, TMR9
+53:                    TMR8 = 0x00; // Clear 32-bit Timer (lsw)
+00030A  EB0200     CLR W4
+00030C  880984     MOV W4, TMR8
+54:                    PR9 = 0x0002; // Load 32-bit period value (msw)
+00030E  200024     MOV #0x2, W4
+000310  8809C4     MOV W4, PR9
+55:                    PR8 = 0x625A; // Load 32-bit period value (lsw)
+000312  2625A4     MOV #0x625A, W4
+000314  8809B4     MOV W4, PR8
+56:                
+57:                    IPC13bits.T9IP = 0x01; // Set Timer3 Interrupt Priority Level
+000316  8005F4     MOV IPC13, W4
+000318  A00004     BSET W4, #0
+00031A  A11004     BCLR W4, #1
+00031C  A12004     BCLR W4, #2
+00031E  8805F4     MOV W4, IPC13
+58:                    IFS3bits.T9IF = 0; // Clear Timer3 Interrupt Flag
+000320  A9808A     BCLR IFS3, #4
+59:                    IEC3bits.T9IE = 1; // Enable Timer3 interrupt
+000322  A8809A     BSET IEC3, #4
+60:                
+61:                    T8CONbits.TON = 1; // Start 32-bit Timer
+000324  A8E13B     BSET 0x13B, #7
+62:                
+63:                }
+000326  FA8000     ULNK
+000328  060000     RETURN
+64:                
+65:                /*ISRs*/
+66:                void __attribute__((__interrupt__, no_auto_psv)) _T9Interrupt(void){
+00032A  BE9F84     MOV.D W4, [W15++]
+00032C  781F86     MOV W6, [W15++]
+00032E  FA0000     LNK #0x0
+67:                /* Interrupt Service Routine code goes here */
+68:                    LATAbits.LATA0 = !LATAbits.LATA0;
+000330  801624     MOV LATA, W4
+000332  620261     AND W4, #0x1, W4
+000334  A7F004     BTSC W4, #15
+000336  EA0204     NEG W4, W4
+000338  E90204     DEC W4, W4
+00033A  DE224F     LSR W4, #15, W4
+00033C  784204     MOV.B W4, W4
+00033E  FB8204     ZE W4, W4
+000340  620261     AND W4, #0x1, W4
+000342  801626     MOV LATA, W6
+000344  2FFFE5     MOV #0xFFFE, W5
+000346  630285     AND W6, W5, W5
+000348  728204     IOR W5, W4, W4
+00034A  881624     MOV W4, LATA
+69:                    IFS3bits.T9IF = 0; // Clear Timer3 Interrupt Flag
+00034C  A9808A     BCLR IFS3, #4
+70:                }
+00034E  FA8000     ULNK
+000350  78034F     MOV [--W15], W6
+000352  BE024F     MOV.D [--W15], W4
+000354  064000     RETFIE
+71:                
+72:                /*Main Routine*/
+73:                int main(int argc, char** argv) {
+000356  FA0004     LNK #0x4
+000358  780F00     MOV W0, [W14]
+00035A  980711     MOV W1, [W14+2]
+74:                    SetupClock();
+00035C  07FF9D     RCALL SetupClock
+75:                    InitLED();
+00035E  07FFC4     RCALL InitLED
+76:                    InitT89();
+000360  07FFC8     RCALL InitT89
+77:                    while(1);
+000362  37FFFF     BRA 0x362
+78:                    return (EXIT_SUCCESS);
+79:                }
+80:                

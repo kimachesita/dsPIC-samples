@@ -1,0 +1,247 @@
+Disassembly Listing for project1
+Generated From:
+C:/Users/Kim Chesed Paller/MPLABXProjects/project1.X/dist/default/debug/project1.X.debug.elf
+May 8, 2014 10:46:48 PM
+
+---  C:/Users/Kim Chesed Paller/MPLABXProjects/project1.X/project1.c  -----------------------------------
+1:                 /* 
+2:                  * File:   project1.c
+3:                  * Author: Kim Chesed Paller
+4:                  *
+5:                  * Created on April 29, 2014, 8:16 PM
+6:                  */
+7:                 
+8:                 #define FCY 40000000ULL //Fcy = (Fosc/2) Fosc = 80MHz
+9:                 #define BAUD 9600       //UART1 Baud Rate @ 9600
+10:                
+11:                #include <stdlib.h>
+12:                #include <xc.h>
+13:                #include "config.h"
+14:                #include <libpic30.h>
+15:                
+16:                void SetupClock(void);
+17:                void InitUART1(void);
+18:                void SendUART1(char* str, size_t size);
+19:                
+20:                /*
+21:                 * 
+22:                 */
+23:                int main(int argc, char** argv) {
+000298  FA0004     LNK #0x4
+00029A  780F00     MOV W0, [W14]
+00029C  980711     MOV W1, [W14+2]
+24:                    SetupClock();
+00029E  07000B     RCALL SetupClock
+25:                    InitUART1();
+0002A0  070032     RCALL InitUART1
+26:                    TRISAbits.TRISA0 = 0;
+0002A2  A902C0     BCLR TRISA, #0
+27:                    while(1)
+28:                    {
+29:                        LATAbits.LATA0 = 1;
+0002A4  A802C4     BSET LATA, #0
+30:                        __delay_ms(1000);
+0002A6  25A000     MOV #0x5A00, W0
+0002A8  202621     MOV #0x262, W1
+0002AA  07007B     RCALL 0x3A2
+31:                        LATAbits.LATA0 = 0;
+0002AC  A902C4     BCLR LATA, #0
+32:                        __delay_ms(1000);
+0002AE  25A000     MOV #0x5A00, W0
+0002B0  202621     MOV #0x262, W1
+0002B2  070077     RCALL 0x3A2
+33:                    }
+0002B4  37FFF7     BRA 0x2A4
+34:                    return (EXIT_SUCCESS);
+35:                }
+36:                
+37:                
+38:                void SetupClock(){
+0002B6  FA0000     LNK #0x0
+39:                    // Configure PLL prescaler, PLL postscaler, PLL divisor
+40:                    PLLFBD=38; // M = 40
+0002B8  200264     MOV #0x26, W4
+0002BA  883A34     MOV W4, PLLFBD
+41:                    CLKDIVbits.PLLPOST = 0; // N2 = 2
+0002BC  803A24     MOV CLKDIV, W4
+0002BE  A16004     BCLR W4, #6
+0002C0  A17004     BCLR W4, #7
+0002C2  883A24     MOV W4, CLKDIV
+42:                    CLKDIVbits.PLLPRE = 0; // N1 = 2
+0002C4  803A25     MOV CLKDIV, W5
+0002C6  2FFE04     MOV #0xFFE0, W4
+0002C8  628204     AND W5, W4, W4
+0002CA  883A24     MOV W4, CLKDIV
+43:                    
+44:                    // Initiate Clock Switch to Internal FRC with PLL (NOSC = 0b011)
+45:                    __builtin_write_OSCCONH(0x03);
+0002CC  200036     MOV #0x3, W6
+0002CE  200784     MOV #0x78, W4
+0002D0  2009A5     MOV #0x9A, W5
+0002D2  207437     MOV #0x743, W7
+0002D4  784B84     MOV.B W4, [W7]
+0002D6  784B85     MOV.B W5, [W7]
+0002D8  784B86     MOV.B W6, [W7]
+46:                    __builtin_write_OSCCONL(0x01);
+0002DA  200016     MOV #0x1, W6
+0002DC  200464     MOV #0x46, W4
+0002DE  200575     MOV #0x57, W5
+0002E0  207427     MOV #0x742, W7
+0002E2  784B84     MOV.B W4, [W7]
+0002E4  784B85     MOV.B W5, [W7]
+0002E6  784B86     MOV.B W6, [W7]
+47:                
+48:                    // Wait for Clock switch to occur
+49:                    while (OSCCONbits.COSC != 0b011){};
+0002E8  000000     NOP
+0002EA  803A15     MOV OSCCON, W5
+0002EC  270004     MOV #0x7000, W4
+0002EE  628284     AND W5, W4, W5
+0002F0  230004     MOV #0x3000, W4
+0002F2  528F84     SUB W5, W4, [W15]
+0002F4  3AFFFA     BRA NZ, 0x2EA
+50:                    // Wait for PLL to lock
+51:                    while(OSCCONbits.LOCK != 1) {};
+0002F6  000000     NOP
+0002F8  803A15     MOV OSCCON, W5
+0002FA  200204     MOV #0x20, W4
+0002FC  628204     AND W5, W4, W4
+0002FE  520FE0     SUB W4, #0x0, [W15]
+000300  32FFFB     BRA Z, 0x2F8
+52:                }
+000302  FA8000     ULNK
+000304  060000     RETURN
+53:                
+54:                void InitUART1(){
+000306  FA000C     LNK #0xC
+55:                
+56:                    //configure U1Mode Register for 8,2,1 operation
+57:                    U1MODEbits.UARTEN = 0;	// Bit15 TX, RX DISABLED, ENABLE at end of func
+000308  A9E221     BCLR 0x221, #7
+58:                    //U2MODEbits.notimplemented;// Bit14
+59:                    U1MODEbits.USIDL = 0;	// Bit13 Continue in Idle
+00030A  A9A221     BCLR 0x221, #5
+60:                    U1MODEbits.IREN = 0;	// Bit12 No IR translation
+00030C  A98221     BCLR 0x221, #4
+61:                    U1MODEbits.RTSMD = 0;	// Bit11 Flow Control Mode
+00030E  A96221     BCLR 0x221, #3
+62:                    //U2MODEbits.notimplemented;	// Bit10
+63:                    U1MODEbits.UEN = 0;		// Bits8,9 TX,RX enabled, CTS,RTS not
+000310  801104     MOV U1MODE, W4
+000312  A18004     BCLR W4, #8
+000314  A19004     BCLR W4, #9
+000316  881104     MOV W4, U1MODE
+64:                    U1MODEbits.WAKE = 0;	// Bit7 No Wake up (since we don't sleep here)
+000318  A9E220     BCLR U1MODE, #7
+65:                    U1MODEbits.LPBACK = 0;	// Bit6 No Loop Back
+00031A  A9C220     BCLR U1MODE, #6
+66:                    U1MODEbits.ABAUD = 0;	// Bit5 No Autobaud (would require sending '55')
+00031C  A9A220     BCLR U1MODE, #5
+67:                    U1MODEbits.URXINV = 0;	// Bit4 IdleState = 1  (for dsPIC)
+00031E  A98220     BCLR U1MODE, #4
+68:                    U1MODEbits.BRGH = 0;	// Bit3 16 clocks per bit period, Standard Speed Mode
+000320  A96220     BCLR U1MODE, #3
+69:                    U1MODEbits.PDSEL = 0;	// Bits1,2 8bit, No Parity
+000322  801104     MOV U1MODE, W4
+000324  A11004     BCLR W4, #1
+000326  A12004     BCLR W4, #2
+000328  881104     MOV W4, U1MODE
+70:                    U1MODEbits.STSEL = 0;	// Bit0 One Stop Bit
+00032A  A90220     BCLR U1MODE, #0
+71:                
+72:                    // Load a value into Baud Rate Generator.  Example is for 9600.
+73:                    U1BRG = 260;
+00032C  201044     MOV #0x104, W4
+00032E  881144     MOV W4, U1BRG
+74:                
+75:                    // Load all values in for U1STA SFR
+76:                
+77:                    U1STAbits.UTXISEL1 = 1;	//Bit15 Int when a word is transfered and  transmit has atleast 1 empty room
+000330  A8E223     BSET 0x223, #7
+78:                    U1STAbits.UTXISEL0 = 0;	//Bit13 Other half of Bit15
+000332  A9A223     BCLR 0x223, #5
+79:                
+80:                    IFS0bits.U1TXIF = 0;	// Clear the Transmit Interrupt Flag
+000334  A98085     BCLR 0x85, #4
+81:                    IEC0bits.U1TXIE = 1; // Enable UART TX interrupt
+000336  A88095     BSET 0x95, #4
+82:                    U1MODEbits.UARTEN = 1; // Enable UART
+000338  A8E221     BSET 0x221, #7
+83:                    U1STAbits.UTXEN = 1; // Enable UART TX
+00033A  A84223     BSET 0x223, #2
+84:                
+85:                    __delay_ms(1000);
+00033C  25A000     MOV #0x5A00, W0
+00033E  202621     MOV #0x262, W1
+000340  070030     RCALL 0x3A2
+86:                    char str[] = "PTL!!!!";
+000342  254504     MOV #0x5450, W4
+000344  2214C5     MOV #0x214C, W5
+000346  BE8F04     MOV.D W4, [W14]
+000348  221214     MOV #0x2121, W4
+00034A  200215     MOV #0x21, W5
+00034C  980724     MOV W4, [W14+4]
+00034E  980735     MOV W5, [W14+6]
+87:                    char str1[] = "OAH";
+000350  2414F4     MOV #0x414F, W4
+000352  200485     MOV #0x48, W5
+000354  980744     MOV W4, [W14+8]
+000356  980755     MOV W5, [W14+10]
+88:                    SendUART1(str,sizeof(str)/sizeof(char));
+000358  200081     MOV #0x8, W1
+00035A  78000E     MOV W14, W0
+00035C  07000A     RCALL SendUART1
+89:                    SendUART1(str1,sizeof(str1)/sizeof(char));
+00035E  470268     ADD W14, #0x8, W4
+000360  200041     MOV #0x4, W1
+000362  780004     MOV W4, W0
+000364  070006     RCALL SendUART1
+90:                
+91:                
+92:                }
+000366  FA8000     ULNK
+000368  060000     RETURN
+93:                
+94:                void __attribute__((__interrupt__,no_auto_psv)) _U1TXInterrupt(void){
+00036A  FA0000     LNK #0x0
+95:                    IFS0bits.U1TXIF = 0; // Clear TX Interrupt flag
+00036C  A98085     BCLR 0x85, #4
+96:                }
+00036E  FA8000     ULNK
+000370  064000     RETFIE
+97:                
+98:                void SendUART1(char* str,size_t size){
+000372  FA0006     LNK #0x6
+000374  980710     MOV W0, [W14+2]
+000376  980721     MOV W1, [W14+4]
+99:                    int ctr = 0;
+000378  EB0200     CLR W4
+00037A  780F04     MOV W4, [W14]
+100:               
+101:                   while(ctr != size){
+00037C  37000C     BRA 0x396
+000396  78029E     MOV [W14], W5
+000398  90022E     MOV [W14+4], W4
+00039A  528F84     SUB W5, W4, [W15]
+00039C  3AFFF0     BRA NZ, 0x37E
+102:                       if(IFS0bits.U1TXIF == 0){
+00037E  800425     MOV IFS0, W5
+000380  210004     MOV #0x1000, W4
+000382  628204     AND W5, W4, W4
+000384  520FE0     SUB W4, #0x0, [W15]
+000386  3A0007     BRA NZ, 0x396
+103:                            U1TXREG = str[ctr];
+000388  78021E     MOV [W14], W4
+00038A  90029E     MOV [W14+2], W5
+00038C  428204     ADD W5, W4, W4
+00038E  784214     MOV.B [W4], W4
+000390  FB0204     SE W4, W4
+000392  881124     MOV W4, U1TXREG
+104:                            ctr++;
+000394  E80F1E     INC [W14], [W14]
+105:                       }
+106:                   }
+107:               }
+00039E  FA8000     ULNK
+0003A0  060000     RETURN
+108:               
